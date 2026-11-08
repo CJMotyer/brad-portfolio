@@ -1,74 +1,98 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { regionalCredits, educationalCredits, photographs, imageUrl, headshot, portrait } from './data/portfolio';
 
-const roles = [
-  { title: 'After Midnight', type: 'Feature Film · Lead', year: '2026', image: 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=1400&q=85' },
-  { title: 'The Long Way Home', type: 'Limited Series · Recurring', year: '2025', image: 'https://images.unsplash.com/photo-1485968579580-b6d095142e6e?auto=format&fit=crop&w=1400&q=85' },
-  { title: 'No Fixed Address', type: 'Short Film · Lead', year: '2025', image: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1400&q=85' },
-];
+type Credit = (typeof regionalCredits)[number];
+function CreditTable({ credits, label }: { credits: Credit[]; label: string }) {
+  return <div className="table-scroll" role="region" aria-label={label} tabIndex={0}><table><caption className="sr-only">{label}</caption><thead><tr><th scope="col">Production</th><th scope="col">Role</th><th scope="col">Theatre / Company</th><th scope="col">Director</th></tr></thead><tbody>{credits.map((item) => <tr key={item.production}><th scope="row">{item.production}</th><td>{item.role}</td><td>{item.company}</td><td>{item.director}</td></tr>)}</tbody></table></div>;
+}
 
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [reelOpen, setReelOpen] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState(0);
+  const dialog = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
-    const items = document.querySelectorAll('[data-reveal]');
-    const observer = new IntersectionObserver(
-      (entries) => entries.forEach((entry) => entry.isIntersecting && entry.target.classList.add('is-visible')),
-      { threshold: 0.14 },
-    );
-    items.forEach((item) => observer.observe(item));
-    return () => observer.disconnect();
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setMenuOpen(false); };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
   }, []);
 
-  useEffect(() => {
-    document.body.style.overflow = reelOpen ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
-  }, [reelOpen]);
+  function openPhoto(index: number) {
+    setSelectedPhoto(index);
+    dialog.current?.showModal();
+  }
 
+  const photo = photographs[selectedPhoto];
   return (
     <main>
+      <a className="skip-link" href="#about">Skip to content</a>
       <header className="nav-shell">
-        <a className="wordmark" href="#top" aria-label="Avery Stone home">AVERY <span>STONE</span></a>
-        <button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen} aria-label="Toggle navigation"><span /><span /></button>
-        <nav className={menuOpen ? 'nav-links open' : 'nav-links'} onClick={() => setMenuOpen(false)}>
-          <a href="#work">Work</a><a href="#about">About</a><a href="#contact">Contact</a>
-          <button onClick={() => setReelOpen(true)}>Play reel <span>↗</span></button>
+        <a className="wordmark" href="#top" aria-label="Brad Motyer home">BRAD <span>MOTYER</span></a>
+        <button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen} aria-controls="navigation" aria-label={menuOpen ? 'Close navigation' : 'Open navigation'}>{menuOpen ? 'Close ×' : 'Menu +'}</button>
+        <nav id="navigation" aria-label="Main navigation" className={menuOpen ? 'nav-links open' : 'nav-links'} onClick={() => setMenuOpen(false)}>
+          <a href="#about">About me</a><a href="#gallery">Gallery</a><a href="#resume">Résumé</a><a href="#contact">Contact <span>↗</span></a>
         </nav>
       </header>
 
-      <section id="top" className="hero">
-        <div className="hero-image" aria-hidden="true" /><div className="hero-shade" />
+      <section id="top" className="hero" aria-labelledby="hero-title">
         <div className="hero-copy">
-          <p className="eyebrow"><i /> Los Angeles · New York</p>
-          <h1><span>Avery</span><span className="outline">Stone</span></h1>
-          <div className="hero-bottom"><p>Actor / Storyteller<br />SAG-AFTRA</p><button className="play" onClick={() => setReelOpen(true)}><b>▶</b><span>Watch<br />showreel</span></button></div>
+          <p className="eyebrow">Actor · Singer</p>
+          <h1 id="hero-title">Brad Motyer</h1>
+          <p className="hero-location">BFA Musical Theatre<br />Kent State University · Class of 2028</p>
+          <div className="hero-actions"><a className="button" href="#about">About me</a><a className="button button-outline" href="#resume">My résumé</a></div>
         </div>
-        <a className="scroll-cue" href="#work">Scroll to explore <i /></a>
+        <figure className="hero-portrait">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="hero-image" src={headshot} width={1333} height={2000} alt="Brad Motyer, headshot by Tara Motyer" fetchPriority="high" />
+          <figcaption className="hero-credit">Photo: Tara Motyer</figcaption>
+        </figure>
       </section>
 
-      <section id="work" className="work section-pad">
-        <div className="section-heading" data-reveal><p className="kicker">01 / Selected work</p><h2>Stories worth<br /><em>remembering.</em></h2></div>
-        <div className="role-grid">
-          {roles.map((role, index) => (
-            <article className="role-card" key={role.title} data-reveal style={{ '--delay': `${index * 100}ms` } as React.CSSProperties}>
-              <div className="role-image" style={{ backgroundImage: `url(${role.image})` }}><span>0{index + 1}</span></div>
-              <div className="role-meta"><div><h3>{role.title}</h3><p>{role.type}</p></div><span>{role.year}</span></div>
-            </article>
-          ))}
+      <section id="about" className="about section-pad" aria-labelledby="about-title">
+        <figure className="about-portrait">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={portrait} width={1440} height={1440} alt="Portrait of Brad Motyer, photographed by Tara Motyer" loading="lazy" />
+          <figcaption>Portrait · Photo: Tara Motyer</figcaption>
+        </figure>
+        <div className="about-copy"><p className="kicker">Biography</p><h2 id="about-title" className="statement">About me</h2>
+          <p className="body-copy">Hi, I’m Brad! I’m an actor and singer working toward my BFA in Musical Theatre at Kent State University, where I expect to graduate in 2028.</p>
+          <p className="body-copy">I’ve performed with Porthouse Theatre, Starlight Mountain Theatre, and Players Guild Theatre. My roles include Motel in <em>Fiddler on the Roof</em>, Troy Bolton in <em>High School Musical</em>, and Dennis in <em>The Play That Goes Wrong</em>. At Kent State, I’ve played Mr Darcy in <em>Pride and Prejudice</em> and Bob Martindale in <em>Perfect Arrangement</em>.</p>
+          <p className="body-copy">My musical background also includes Chamber Singers Choir at The College of Idaho. I’m a baritenor, speak fluent Spanish, and read music. I also do vocal percussion.</p>
+          <div className="facts"><div><span>Voice</span><b>Baritenor · A2–C4</b></div><div><span>Height</span><b>6′ 0″</b></div><div><span>Training</span><b>Kent State · ’28</b></div></div><a className="text-link" href="#resume">View my résumé <span>↘</span></a>
         </div>
       </section>
 
-      <section id="about" className="about section-pad">
-        <div className="about-image" data-reveal><span>Portrait / 2026</span></div>
-        <div className="about-copy" data-reveal><p className="kicker">02 / About</p><p className="statement">I look for the quiet truth inside bold characters.</p><p className="body-copy">Avery Stone is a Los Angeles–based actor known for grounded, emotionally precise performances across film and television. Their work lives in the space between restraint and revelation.</p><div className="facts"><div><span>Height</span><b>5′ 9″</b></div><div><span>Location</span><b>LA / NYC</b></div><div><span>Representation</span><b>North Artists</b></div></div><a className="text-link" href="./resume.pdf">Download résumé <span>↓</span></a></div>
+      <section id="gallery" className="work section-pad" aria-labelledby="gallery-title">
+        <div className="section-heading"><div><p className="kicker">Gallery</p></div><h2 id="gallery-title">Production photos</h2></div>
+        <p className="gallery-instruction">Select a photograph to view it in full.</p>
+        <div className="role-grid">{photographs.map((item, index) => (
+          <figure className="role-card" key={item.file}>
+            <button className="photo-button" onClick={() => openPhoto(index)} aria-label={`Enlarge photo: ${item.title}`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={imageUrl(item.file)} width={item.width} height={item.height} alt={item.alt} loading="lazy" /><span className="photo-expand" aria-hidden="true">↗</span>
+            </button>
+            <figcaption><div className="role-meta"><h3>{item.title}</h3></div><p className="role-detail">{item.role} · {item.company}</p><p className="photo-credit">Photo: {item.photographer}</p></figcaption>
+          </figure>
+        ))}</div>
       </section>
 
-      <section className="quote section-pad" data-reveal><p>“A rare combination of stillness<br />and <em>electricity.</em>”</p><span>— The Screen Journal</span></section>
-      <footer id="contact" className="footer section-pad"><p className="kicker">03 / Let’s connect</p><a className="email" href="mailto:hello@averystone.com">hello@averystone.com <span>↗</span></a><div className="footer-row"><p>© 2026 Avery Stone</p><div><a href="#">Instagram</a><a href="#">IMDb</a><a href="#">Vimeo</a></div><a href="#top">Back to top ↑</a></div></footer>
+      <section id="resume" className="resume section-pad" aria-labelledby="resume-title"><div className="section-heading"><div><p className="kicker">Credits & training</p></div><h2 id="resume-title">Résumé</h2></div>
+        <div className="resume-top"><div><h3>Brad Motyer</h3><p>Actor & singer<br />Height: 6′ 0″ · Baritenor (A2–C4)</p></div><a className="download-button" href="./brad-motyer-resume.pdf" download>Download my résumé <span>↓ PDF</span></a></div>
+        <h3 className="resume-label">Regional theatre</h3><p className="table-hint">Swipe the credits to see companies and directors →</p><CreditTable credits={regionalCredits} label="Brad Motyer regional theatre credits" />
+        <h3 className="resume-label">Educational theatre</h3><CreditTable credits={educationalCredits} label="Brad Motyer educational theatre credits" />
+        <div className="training-grid"><div><h3 className="resume-label">Education & training</h3><p><strong>Kent State University</strong><br />BFA, Musical Theatre · Expected 2028</p><p><strong>The College of Idaho · 2017–2019</strong><br />Chamber Singers Choir<br />Dr Brent Wells, Director</p></div><div><h3 className="resume-label">Special skills</h3><ul className="skills-list"><li>Baritenor · A2–C4</li><li>Music reading & vocal percussion</li><li>Fluent Spanish</li><li>Whistling on pitch & belching on command</li><li>Rollerblading & competitive swimming</li></ul></div></div>
+      </section>
 
-      {reelOpen && <div className="reel-modal" role="dialog" aria-modal="true" aria-label="Showreel"><button onClick={() => setReelOpen(false)} aria-label="Close showreel">Close ×</button><div className="reel-frame"><div><span>SHOWREEL</span><b>Replace this panel with your Vimeo or YouTube embed.</b></div></div></div>}
+      <footer id="contact" className="footer section-pad"><p className="kicker">Say hello</p><h2>Contact me.</h2><p className="contact-copy">For auditions and production enquiries, you can reach me here.</p><a className="email" href="mailto:Bmotyer25@gmail.com">Bmotyer25@gmail.com <span aria-hidden="true">↗</span></a><a className="contact-phone" href="tel:+12087896731">(208) 789-6731</a><div className="footer-row"><p>© {new Date().getFullYear()} Brad Motyer</p><p>Photography: Tara Motyer · Rami Daud · Michael Carrier · Bob Christy</p><a href="#top">Back to top ↑</a></div></footer>
+
+      <dialog ref={dialog} className="photo-dialog" aria-labelledby="photo-title" onClick={(event) => { if (event.target === event.currentTarget) dialog.current?.close(); }}>
+        <button className="dialog-close" onClick={() => dialog.current?.close()} aria-label="Close enlarged photo" autoFocus>Close ×</button>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={imageUrl(photo.file)} width={photo.width} height={photo.height} alt={photo.alt} />
+        <div><h2 id="photo-title">{photo.title}</h2><p>{photo.role} · {photo.company}</p><p>Photo: {photo.photographer}</p></div>
+      </dialog>
     </main>
   );
 }
